@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>循环对话框示例</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+            color: white;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active  {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 500px;
+            overflow: hidden;
+            transform: scale(0.9);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .modal-overlay.active  .modal {
+            transform: scale(1);
+            opacity: 1;
+        }
+        
+        .modal-header {
+            background: linear-gradient(to right, #e8f16d, #ff9b2b);
+            color: white;
+            padding: 25px 20px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .modal-content {
+            padding: 30px 20px;
+            color: #333;
+            line-height: 1.6;
+            text-align: center;
+        }
+        
+        .modal-footer {
+            display: flex;
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 1px solid #eee;
+        }
+        
+        .modal-btn {
+            flex: 1;
+            padding: 14px 10px;
+            margin: 0 8px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            transform: translateY(0);
+        }
+        
+        .modal-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-agree {
+            background: linear-gradient(to right, #00b09b, #96c93d);
+            color: white;
+        }
+        
+        .btn-disagree {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            color: white;
+            position: relative;
+        }
+        
+        .info-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 40px;
+            backdrop-filter: blur(10px);
+            text-align: left;
+        }
+        
+        .info-card h2 {
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            padding-bottom: 10px;
+        }
+        
+        .info-card ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        
+        .info-card li {
+            margin-bottom: 12px;
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .info-card li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #ffcc00;
+            font-size: 1.5rem;
+        }
+        
+        .counter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+        }
+        
+        /* 抖动动画 */
+        @keyframes shake {
+            0%, 100% {transform: translateX(0);}
+            10%, 30%, 50%, 70%, 90% {transform: translateX(-5px);}
+            20%, 40%, 60%, 80% {transform: translateX(5px);}
+        }
+        
+        .shake {
+            animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .modal-header {
+                font-size: 1.5rem;
+                padding: 20px 15px;
+            }
+            
+            .modal-btn {
+                padding: 12px 8px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="counter">拒绝次数: <span id="counter">0</span></div>
+    
+    <div class="modal-overlay active" id="modalOverlay">
+        <div class="modal" id="modalDialog">
+            <div class="modal-header">连接申请 ❤️ 请田大美女审批</div>
+            <div class="modal-content" id="modal-content">你懂的 ~~~ 😜</div>
+            <div class="modal-footer">
+                <button class="modal-btn btn-disagree" id="disagreeBtn">不同意</button>
+                <button class="modal-btn btn-agree" id="agreeBtn">同意</button>
+            </div>
+        </div>
+    </div>
+ 
+    <script>
+        // 获取DOM元素 
+        const modalOverlay = document.getElementById('modalOverlay'); 
+        const modalDialog = document.getElementById('modalDialog'); 
+        const agreeBtn = document.getElementById('agreeBtn'); 
+        const disagreeBtn = document.getElementById('disagreeBtn'); 
+        const counterElement = document.getElementById('counter'); 
+        const modalContent = document.getElementById('modal-content');
+        
+        let rejectCount = 0;
+        
+        // 显示对话框的函数 
+        function showModal() {
+            modalOverlay.classList.add('active'); 
+            counterElement.textContent  = rejectCount;
+        }
+        
+        // 隐藏对话框的函数 
+        function hideModal() {
+            modalOverlay.classList.remove('active'); 
+        }
+        
+        // 同意按钮事件 
+        agreeBtn.addEventListener('click',  function() {
+            // hideModal();
+            // 添加抖动动画 
+            modalDialog.classList.add('shake'); 
+            
+            // 隐藏对话框并在短暂延迟后重新显示 
+            hideModal();
+            
+            // 移除动画类（在动画结束后）
+            setTimeout(() => {
+                modalDialog.classList.remove('shake'); 
+                modalContent.innerHTML = "棒棒哒 ~~~ 😍";
+            }, 600);
+            
+            // 短暂延迟后重新显示对话框 
+            setTimeout(showModal, 300);
+        });
+        
+        // 不同意按钮事件 
+        disagreeBtn.addEventListener('click',  function() {
+            // 增加拒绝计数 
+            rejectCount++;
+            
+            // 添加抖动动画 
+            modalDialog.classList.add('shake'); 
+            
+            // 隐藏对话框并在短暂延迟后重新显示 
+            hideModal();
+            
+            // 移除动画类（在动画结束后）
+            setTimeout(() => {
+                modalDialog.classList.remove('shake'); 
+                if(rejectCount === 1){
+                    modalContent.innerHTML = "再想想哦 ~~~ 😍";
+                }else{
+                    modalContent.innerHTML = "再给你一次重新选择的机会 ~~~ 😍";
+                }
+            }, 600);
+            
+            // 短暂延迟后重新显示对话框 
+            setTimeout(showModal, 300);
+        });
+        
+        // 页面加载时显示对话框 
+        window.addEventListener('load',  showModal);
+    </script>
+</body>
+</html>
